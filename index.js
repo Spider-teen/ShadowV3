@@ -194,8 +194,8 @@ app.use((req, res) => {
 });
 
 server.on("request", (req, res) => {
-    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     if (bare?.shouldRoute?.(req)) return bare.routeRequest(req, res);
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     app(req, res);
 });
 
