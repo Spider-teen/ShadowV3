@@ -9,7 +9,6 @@ import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
-import { baremuxPath, createBareServer } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { join } from "path";
 import { users, port, brokenSites } from "./config.js";
@@ -22,7 +21,16 @@ const version = process.env.npm_package_version;
 const publicPath = fileURLToPath(new URL("./public/", import.meta.url));
 const app = express();
 const server = createServer();
-const bare = typeof createBareServer === "function" ? createBareServer("/bare/") : null;
+let baremuxPath;
+let bare = null;
+await import("@mercuryworkshop/bare-mux/node")
+    .then(({ baremuxPath: resolvedPath, createBareServer }) => {
+        baremuxPath = resolvedPath;
+        bare = typeof createBareServer === "function" ? createBareServer("/bare/") : null;
+    })
+    .catch((error) => {
+        console.warn("Bare mux unavailable; proxy routes disabled:", error?.message || error);
+    });
 if (Object.keys(users).length > 0) app.use(basicAuth({ users, challenge: true }));
 app.use(express.static(publicPath, { maxAge: 604800000 })); //1 week
 app.use('/books/files/', (req, res) => {
@@ -37,7 +45,7 @@ app.use('/books/files/', (req, res) => {
 });
 app.use("/epoxy/", express.static(epoxyPath));
 app.use("/libcurl/", express.static(libcurlPath));
-app.use("/baremux/", express.static(baremuxPath));
+if (baremuxPath) app.use("/baremux/", express.static(baremuxPath));
 app.use("/uv/", express.static(uvPath));
 app.use("/privacy", express.static(publicPath + "/privacy.html"));
 
