@@ -9,7 +9,7 @@ import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
-import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
+import { baremuxPath, createBareServer } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { join } from "path";
 import { users, port, brokenSites } from "./config.js";
@@ -22,6 +22,7 @@ const version = process.env.npm_package_version;
 const publicPath = fileURLToPath(new URL("./public/", import.meta.url));
 const app = express();
 const server = createServer();
+const bare = typeof createBareServer === "function" ? createBareServer("/bare/") : null;
 if (Object.keys(users).length > 0) app.use(basicAuth({ users, challenge: true }));
 app.use(express.static(publicPath, { maxAge: 604800000 })); //1 week
 app.use('/books/files/', (req, res) => {
@@ -194,11 +195,14 @@ app.use((req, res) => {
 
 server.on("request", (req, res) => {
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    if (bare?.shouldRoute?.(req)) return bare.routeRequest(req, res);
     app(req, res);
 });
 
 server.on("upgrade", (req, socket, head) => {
-    if (req.url.endsWith("/wisp/"))
+    if (bare?.shouldRoute?.(req))
+        bare.routeUpgrade(req, socket, head);
+    else if (req.url.endsWith("/wisp/"))
         wisp.routeRequest(req, socket, head);
     else socket.end();
 });
