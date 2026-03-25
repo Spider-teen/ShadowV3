@@ -21,6 +21,16 @@ const version = process.env.npm_package_version;
 const publicPath = fileURLToPath(new URL("./public/", import.meta.url));
 const app = express();
 const server = createServer();
+const timeoutFromEnv = (key, fallback = 0) => {
+    const value = Number(process.env[key]);
+    return Number.isFinite(value) && value >= 0 ? value : fallback;
+};
+const serverTimeoutMs = timeoutFromEnv("SERVER_TIMEOUT_MS", 0);
+const keepAliveTimeoutMs = timeoutFromEnv("KEEP_ALIVE_TIMEOUT_MS", 0);
+server.requestTimeout = serverTimeoutMs;
+server.headersTimeout = serverTimeoutMs > 0 ? serverTimeoutMs + 1000 : 0;
+server.keepAliveTimeout = keepAliveTimeoutMs;
+server.setTimeout(serverTimeoutMs);
 let baremuxPath;
 let bare = null;
 const isBareRoute = (url = "") => url.startsWith("/bare/") || url.startsWith("/baremux/");

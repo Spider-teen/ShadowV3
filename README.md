@@ -38,6 +38,7 @@ Run Shadow as your own website locally or on your own server without Render/Verc
 3. Optional: copy `example.env` to `.env` and customize:
    - `PORT` to change the website port
    - `USERS_JSON` to enable basic-auth login
+   - `SERVER_TIMEOUT_MS` / `KEEP_ALIVE_TIMEOUT_MS` for timeout tuning (defaults disable timeouts)
    - `SHUTTLEAI_API_KEY` for AI features
 <a href="https://app.cyclic.sh/api/app/deploy/ShadowDevLabs/ShadowV3">
   <img src="https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/main/buttons/official/cyclic.svg" alt="Deploy on Cyclic">
