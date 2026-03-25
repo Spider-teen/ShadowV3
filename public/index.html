@@ -343,6 +343,12 @@
 
     window.changeTheme = changeTheme;
     window.settings = new SettingsManager();
+    const tabCloak = await window.settings.get("tab");
+    if (tabCloak?.title) document.title = tabCloak.title;
+    if (tabCloak?.icon) {
+      const favicon = document.querySelector("link[rel='icon']");
+      if (favicon) favicon.href = tabCloak.icon;
+    }
     window.settings.default(
       "search-engine",
       "https://duckduckgo.com/?q=%s",

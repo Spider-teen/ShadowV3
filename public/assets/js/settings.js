@@ -29,13 +29,22 @@ import { SettingsManager } from "./settings_manager.js";
     title: "Shadow",
     icon: "/assets/imgs/icons/logo.png",
   };
+  const applyTabData = (tabData = settingsDefaultTab) => {
+    const title = tabData?.title || settingsDefaultTab.title;
+    const icon = tabData?.icon || settingsDefaultTab.icon;
+    document.title = title;
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.href = icon;
+    try {
+      if (top && top !== window) {
+        top.document.title = title;
+        const topFavicon = top.document.querySelector('link[rel="icon"]');
+        if (topFavicon) topFavicon.href = icon;
+      }
+    } catch (_) { }
+  };
 
   self.setTitle = async function (title = "") {
-    if (title) {
-      document.title = title;
-    } else {
-      document.title = settingsDefaultTab.title;
-    }
     var tab = await settings.get("tab");
     if (tab) {
       try {
@@ -52,14 +61,10 @@ import { SettingsManager } from "./settings_manager.js";
       delete tabData.title;
     }
     await settings.set("tab", tabData);
+    applyTabData(tabData);
   }
 
   self.setFavicon = async function (icon) {
-    if (icon) {
-      document.querySelector("link[rel='icon']").href = icon;
-    } else {
-      document.querySelector("link[rel='icon']").href = settingsDefaultTab.icon;
-    }
     var tab = await settings.get("tab");
     if (tab) {
       try {
@@ -76,6 +81,7 @@ import { SettingsManager } from "./settings_manager.js";
       delete tabData.icon;
     }
     await settings.set("tab", tabData);
+    applyTabData(tabData);
   }
 
   self.setCloak = function () {
@@ -127,15 +133,10 @@ import { SettingsManager } from "./settings_manager.js";
   }
 
   self.resetTab = async function () {
-    document.title = settingsDefaultTab.title;
-    document.querySelector("link[rel='icon']").href = settingsDefaultTab.icon;
     document.getElementById("title").value = "";
     document.getElementById("icon").value = "";
-    var tabData = {
-      title: settingsDefaultTab.title,
-      icon: settingsDefaultTab.icon,
-    };
-    await settings.get("tab", tabData);
+    await settings.set("tab", {});
+    applyTabData(settingsDefaultTab);
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
@@ -151,11 +152,7 @@ import { SettingsManager } from "./settings_manager.js";
 
     async function updateTabItem() {
       var tabItem = await settings.get("tab");
-      document.title = tabItem.title;
-      var favicon = document.querySelector('link[rel="icon"]');
-      if (favicon) {
-        favicon.href = tabItem.icon;
-      }
+      applyTabData(tabItem || settingsDefaultTab);
     }
   });
 })();
