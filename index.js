@@ -9,7 +9,6 @@ import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
-import { baremuxPath, createBareServer } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { join } from "path";
 import { users, port, brokenSites } from "./config.js";
@@ -22,7 +21,19 @@ const version = process.env.npm_package_version;
 const publicPath = fileURLToPath(new URL("./public/", import.meta.url));
 const app = express();
 const server = createServer();
-const bare = createBareServer("/bare/");
+let baremuxPath;
+let bare = null;
+
+try {
+    const bareMux = await import("@mercuryworkshop/bare-mux/node");
+    baremuxPath = bareMux.baremuxPath;
+    bare = bareMux.createBareServer("/bare/");
+} catch (error) {
+    console.warn(
+        "Bare mux is unavailable. /bare and /baremux routes will return 503 until dependencies are installed.",
+        error?.message || error,
+    );
+}
 if (Object.keys(users).length > 0) app.use(basicAuth({ users, challenge: true }));
 app.use(express.static(publicPath, { maxAge: 604800000 })); //1 week
 app.use('/books/files/', (req, res) => {
@@ -37,9 +48,13 @@ app.use('/books/files/', (req, res) => {
 });
 app.use("/epoxy/", express.static(epoxyPath));
 app.use("/libcurl/", express.static(libcurlPath));
-app.use("/baremux/", express.static(baremuxPath));
+if (baremuxPath) app.use("/baremux/", express.static(baremuxPath));
 app.use("/uv/", express.static(uvPath));
 app.use("/privacy", express.static(publicPath + "/privacy.html"));
+
+app.get("/v1/api/proxy-status", (req, res) => {
+    res.status(200).json({ bare: Boolean(bare) });
+});
 
 app.get("/v1/api/version", (req, res) => {
     if (req.query.v && req.query.v != version) {
@@ -189,6 +204,13 @@ app.get("/v1/api/user-agents", async (req, res) => {
 });
 
 app.use((req, res) => {
+    if (req.url.startsWith("/bare/") || req.url.startsWith("/baremux/")) {
+        res.status(503).json({
+            error: "Proxy transport unavailable",
+            message: "Install dependencies to enable bare-mux routes.",
+        });
+        return;
+    }
     res.status(404);
     res.sendFile(join(publicPath, "404.html"));
 });
