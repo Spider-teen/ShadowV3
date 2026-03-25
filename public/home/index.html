@@ -9,15 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/png" href="/assets/imgs/icons/pages/home.png" />
   <title>Home</title>
-  <!-- Google tag (gtag.js) -->
-  <script src="/ana.js"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-NCTSG4T1B6');
-  </script>
-  <!-- Themes.JS-->
+<!-- Themes.JS-->
   <script src="/assets/js/themes.js" type="module"></script>
 </head>
 
@@ -27,6 +19,35 @@
   <img src="/assets/imgs/icons/plain_logo.webp" alt="Shadow Logo">
   <h1>Shadow</h1>
   <p>discord.gg/goshadow</p>
+  <button id="selfhost-btn" class="selfhost-btn">Self-Host Setup</button>
+
+  <div id="selfhost-modal" class="selfhost-modal hidden" role="dialog" aria-modal="true" aria-labelledby="selfhost-title">
+    <div class="selfhost-card">
+      <h2 id="selfhost-title">Run Your Own Shadow Instance</h2>
+      <ol>
+        <li>Open a terminal in the project folder.</li>
+        <li>Run setup once:</li>
+      </ol>
+      <div class="cmd-row">
+        <code>npm run setup</code>
+        <button data-copy="npm run setup">Copy</button>
+      </div>
+      <ol start="3">
+        <li>Start your self-hosted site:</li>
+      </ol>
+      <div class="cmd-row">
+        <code>npm run selfhost</code>
+        <button data-copy="npm run selfhost">Copy</button>
+      </div>
+      <p class="small-note">Default URL: <strong>http://localhost:8080</strong></p>
+      <div class="actions">
+        <a href="https://github.com/ShadowDevLabs/ShadowV3#self-host-no-deployment-platform-needed" target="_blank" rel="noreferrer">Open Full Guide</a>
+        <button id="close-selfhost" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/home/script.js"></script>
 
 </body>
 </html>
