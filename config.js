@@ -1,9 +1,20 @@
 import fs from "node:fs";
-const users = {
-    // 'john': "password" //Add user pass login
-}
+const defaultUsers = {
+    // "john": "password" //Add user pass login
+};
 
-const port = 8080; //Change the port it binds to
+const users = (() => {
+    if (!process.env.USERS_JSON) return defaultUsers;
+    try {
+        const parsed = JSON.parse(process.env.USERS_JSON);
+        return parsed && typeof parsed === "object" ? parsed : defaultUsers;
+    } catch {
+        console.warn("Invalid USERS_JSON value. Falling back to config.js default users.");
+        return defaultUsers;
+    }
+})();
+
+const port = Number(process.env.PORT) || 8080; // Change with PORT=xxxx
 
 //Edit broken-sites.json to prompt the user to redirect to a fixed version of a site (ex. now.gg --> nowgg.nl)
 const brokenSites = async () => {
