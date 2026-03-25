@@ -31,6 +31,7 @@ Run Shadow as your own website locally or on your own server without Render/Verc
 
 1. Install dependencies and start:
    ```bash
+   npm run setup
    npm run selfhost
    ```
 2. Open the printed URL (defaults to `http://localhost:8080`).

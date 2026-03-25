@@ -23,6 +23,7 @@ const app = express();
 const server = createServer();
 let baremuxPath;
 let bare = null;
+const isBareRoute = (url = "") => url.startsWith("/bare/") || url.startsWith("/baremux/");
 
 try {
     const bareMux = await import("@mercuryworkshop/bare-mux/node");
@@ -204,7 +205,7 @@ app.get("/v1/api/user-agents", async (req, res) => {
 });
 
 app.use((req, res) => {
-    if (req.url.startsWith("/bare/") || req.url.startsWith("/baremux/")) {
+    if (isBareRoute(req.url)) {
         res.status(503).json({
             error: "Proxy transport unavailable",
             message: "Install dependencies to enable bare-mux routes.",
@@ -224,7 +225,9 @@ server.on("request", (req, res) => {
 server.on("upgrade", (req, socket, head) => {
     if (bare?.shouldRoute?.(req))
         bare.routeUpgrade(req, socket, head);
-    else if (req.url.endsWith("/wisp/"))
+    else if (isBareRoute(req.url))
+        socket.end("HTTP/1.1 503 Service Unavailable\r\n\r\n");
+    else if (req.url?.endsWith("/wisp/"))
         wisp.routeRequest(req, socket, head);
     else socket.end();
 });
