@@ -9,7 +9,6 @@ import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
-import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { join } from "path";
 import { users, port, brokenSites } from "./config.js";
@@ -22,6 +21,30 @@ const version = process.env.npm_package_version;
 const publicPath = fileURLToPath(new URL("./public/", import.meta.url));
 const app = express();
 const server = createServer();
+const timeoutFromEnv = (key, fallback = 0) => {
+    const value = Number(process.env[key]);
+    return Number.isFinite(value) && value >= 0 ? value : fallback;
+};
+const serverTimeoutMs = timeoutFromEnv("SERVER_TIMEOUT_MS", 0);
+const keepAliveTimeoutMs = timeoutFromEnv("KEEP_ALIVE_TIMEOUT_MS", 0);
+server.requestTimeout = serverTimeoutMs;
+server.headersTimeout = serverTimeoutMs > 0 ? serverTimeoutMs + 1000 : 0;
+server.keepAliveTimeout = keepAliveTimeoutMs;
+server.setTimeout(serverTimeoutMs);
+let baremuxPath;
+let bare = null;
+const isBareRoute = (url = "") => url.startsWith("/bare/") || url.startsWith("/baremux/");
+
+try {
+    const bareMux = await import("@mercuryworkshop/bare-mux/node");
+    baremuxPath = bareMux.baremuxPath;
+    bare = bareMux.createBareServer("/bare/");
+} catch (error) {
+    console.warn(
+        "Bare mux is unavailable. /bare and /baremux routes will return 503 until dependencies are installed.",
+        error?.message || error,
+    );
+}
 if (Object.keys(users).length > 0) app.use(basicAuth({ users, challenge: true }));
 app.use(express.static(publicPath, { maxAge: 604800000 })); //1 week
 app.use('/books/files/', (req, res) => {
@@ -36,9 +59,13 @@ app.use('/books/files/', (req, res) => {
 });
 app.use("/epoxy/", express.static(epoxyPath));
 app.use("/libcurl/", express.static(libcurlPath));
-app.use("/baremux/", express.static(baremuxPath));
+if (baremuxPath) app.use("/baremux/", express.static(baremuxPath));
 app.use("/uv/", express.static(uvPath));
 app.use("/privacy", express.static(publicPath + "/privacy.html"));
+
+app.get("/v1/api/proxy-status", (req, res) => {
+    res.status(200).json({ bare: Boolean(bare) });
+});
 
 app.get("/v1/api/version", (req, res) => {
     if (req.query.v && req.query.v != version) {
@@ -188,26 +215,39 @@ app.get("/v1/api/user-agents", async (req, res) => {
 });
 
 app.use((req, res) => {
+    if (isBareRoute(req.url)) {
+        res.status(503).json({
+            error: "Proxy transport unavailable",
+            message: "Install dependencies to enable bare-mux routes.",
+        });
+        return;
+    }
     res.status(404);
     res.sendFile(join(publicPath, "404.html"));
 });
 
 server.on("request", (req, res) => {
+    if (bare?.shouldRoute?.(req)) return bare.routeRequest(req, res);
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     app(req, res);
 });
 
 server.on("upgrade", (req, socket, head) => {
-    if (req.url.endsWith("/wisp/"))
+    if (bare?.shouldRoute?.(req))
+        bare.routeUpgrade(req, socket, head);
+    else if (isBareRoute(req.url))
+        socket.end("HTTP/1.1 503 Service Unavailable\r\n\r\n");
+    else if (req.url?.endsWith("/wisp/"))
         wisp.routeRequest(req, socket, head);
     else socket.end();
 });
 
 server.on("listening", () => {
     const address = server.address();
+    const activePort = typeof address === "object" && address ? address.port : port;
     console.log(
         "\n\n\n\x1b[35m\x1b[2m\x1b[1m%s\x1b[0m\n",
-        `Shadow ${version} has started!\nSprinting on port ${address.port}`,
+        `Shadow ${version} has started!\nSprinting on port ${activePort}\nOpen: http://localhost:${activePort}`,
     );
 
     setTimeout(function () {

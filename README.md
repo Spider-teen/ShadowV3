@@ -25,6 +25,21 @@
 <a href="https://render.com/deploy?repo=https://github.com/ShadowDevLabs/ShadowV3">
   <img src="https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/main/buttons/official/render.svg" alt="Deploy on Render">
 </a>
+
+## Self-host (no deployment platform needed)
+Run Shadow as your own website locally or on your own server without Render/Vercel:
+
+1. Install dependencies and start:
+   ```bash
+   npm run setup
+   npm run selfhost
+   ```
+2. Open the printed URL (defaults to `http://localhost:8080`).
+3. Optional: copy `example.env` to `.env` and customize:
+   - `PORT` to change the website port
+   - `USERS_JSON` to enable basic-auth login
+   - `SERVER_TIMEOUT_MS` / `KEEP_ALIVE_TIMEOUT_MS` for timeout tuning (defaults disable timeouts)
+   - `SHUTTLEAI_API_KEY` for AI features
 <a href="https://app.cyclic.sh/api/app/deploy/ShadowDevLabs/ShadowV3">
   <img src="https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/main/buttons/official/cyclic.svg" alt="Deploy on Cyclic">
 </a>
@@ -42,4 +57,3 @@
 - [Dynamic](https://github.com/NebulaServices/Dynamic)｜Proxy
 
 # [Join the Discord](https://discord.gg/goshadow)
-
